@@ -315,7 +315,7 @@ def display_candidate_result(result, candidate_id, exp_mode):
             buffered = BytesIO()
             img.save(buffered, format="PNG")
             st.download_button(
-                label="⬇️ Download",
+                label="⬇️ 다운로드 (Download)",
                 data=buffered.getvalue(),
                 file_name=f"candidate_{candidate_id}.png",
                 mime="image/png",
@@ -330,8 +330,8 @@ def display_candidate_result(result, candidate_id, exp_mode):
     # Show evolution timeline in an expander
     stages = get_evolution_stages(result, exp_mode)
     if len(stages) > 1:
-        with st.expander(f"🔄 View Evolution Timeline ({len(stages)} stages)", expanded=False):
-            st.caption("See how the diagram evolved through different pipeline stages")
+        with st.expander(f"🔄 진화 타임라인 보기 / View Evolution Timeline (단계: {len(stages)})", expanded=False):
+            st.caption("파이프라인 단계를 거치며 다이어그램이 어떻게 진화했는지 확인하세요 (See how the diagram evolved through different pipeline stages)")
             
             for idx, stage in enumerate(stages):
                 st.markdown(f"### {stage['name']}")
@@ -344,17 +344,17 @@ def display_candidate_result(result, candidate_id, exp_mode):
                 
                 # Show description
                 if stage['desc_key'] in result:
-                    with st.expander(f"📝 Description", expanded=False):
+                    with st.expander(f"📝 설명 (Description)", expanded=False):
                         cleaned_desc = clean_text(result[stage['desc_key']])
                         st.write(cleaned_desc)
                 
                 # Show critic suggestions if available
                 if 'suggestions_key' in stage and stage['suggestions_key'] in result:
                     suggestions = result[stage['suggestions_key']]
-                    with st.expander(f"💡 Critic Suggestions", expanded=False):
+                    with st.expander(f"💡 비평가 제안 (Critic Suggestions)", expanded=False):
                         cleaned_sugg = clean_text(suggestions)
                         if cleaned_sugg.strip() == "No changes needed.":
-                            st.success("✅ No changes needed - iteration stopped.")
+                            st.success("✅ 변경 필요 없음 - 반복(iteration)이 중지되었습니다. (No changes needed - iteration stopped.)")
                         else:
                             st.write(cleaned_sugg)
                 
@@ -363,7 +363,7 @@ def display_candidate_result(result, candidate_id, exp_mode):
                     st.divider()
     else:
         # If only one stage, show description in simpler expander
-        with st.expander(f"📝 View Description", expanded=False):
+        with st.expander(f"📝 설명 보기 (View Description)", expanded=False):
             if final_desc_key and final_desc_key in result:
                 # Clean the text to remove invalid UTF-8 characters
                 cleaned_desc = clean_text(result[final_desc_key])
@@ -372,82 +372,82 @@ def display_candidate_result(result, candidate_id, exp_mode):
                 st.info("No description available")
 
 def main():
-    st.title("🍌 PaperVizAgent Demo")
-    st.markdown("AI-powered scientific diagram generation and refinement")
+    st.title("🍌 아티클 도식 시각화 엔진 (PaperVizAgent Demo)")
+    st.markdown("AI 기반 과학 다이어그램 생성 및 다듬기 (AI-powered scientific diagram generation and refinement)")
     
     # Create tabs
-    tab1, tab2 = st.tabs(["📊 Generate Candidates", "✨ Refine Image"])
+    tab1, tab2 = st.tabs(["📊 처음부터 새로 생성 (Generate from Scratch)", "✨ 후보 이미지/스케치 다듬기 (Refine Uploaded Image)"])
     
     # ==================== TAB 1: Generate Candidates ====================
     with tab1:
-        st.markdown("### Generate multiple diagram candidates from your method section and caption")
+        st.markdown("### 스케치가 없거나, 더 좋은 구도를 여러 개 받아보고 싶을 때 사용합니다. 메서드 섹션과 캡션에서 4~8개의 다이어그램 후보를 생성합니다. (Generate from scratch when no sketch is available)")
         
         # Sidebar configuration for Tab 1
         with st.sidebar:
-            st.title("⚙️ Generation Settings")
+            st.title("⚙️ 생성 설정 (Generation Settings)")
             
             exp_mode = st.selectbox(
-                "Pipeline Mode",
+                "파이프라인 모드 (Pipeline Mode)",
                 ["demo_planner_critic", "demo_full"],
                 index=0,
                 key="tab1_exp_mode",
-                help="Select which agent pipeline to use"
+                help="사용할 에이전트 파이프라인을 선택하세요 (Select which agent pipeline to use)"
             )
             
             mode_info = {
                 "demo_planner_critic": "Planner → Visualizer → Critic → Visualizer",
-                "demo_full": "Retriever → Planner → Stylist → Visualizer → Critic → Visualizer. (The stylist can make the diagram more aesthetically pleasing, but prone to be overly simplied. So we recommend trying both modes and select the best one)"
+                "demo_full": "Retriever → Planner → Stylist → Visualizer → Critic → Visualizer. (스타일리스트는 다이어그램을 더 미적으로 만족스럽게 만들 수 있지만 과도하게 단순화되는 경향이 있습니다. 따라서 두 모드를 모두 사용해 보고 가장 좋은 모드를 선택하는 것이 좋습니다.)"
             }
-            st.info(f"**Pipeline:** {mode_info[exp_mode]}")
+            st.info(f"**파이프라인 (Pipeline):** {mode_info[exp_mode]}")
             
             retrieval_setting = st.selectbox(
-                "Retrieval Setting",
+                "검색 설정 (Retrieval Setting)",
                 ["auto", "manual", "random", "none"],
                 index=0,
                 key="tab1_retrieval_setting",
-                help="How to retrieve reference diagrams: auto (automatic selection), manual (use specified references), random (random selection), none (no retrieval)"
+                help="참조 다이어그램을 검색하는 방법: auto (자동 선택), manual (지정된 참조 사용), random (무작위 선택), none (검색 없음)"
             )
             
             num_candidates = st.number_input(
-                "Number of Candidates",
-                min_value=1,
-                max_value=20,
-                value=10,
+                "후보 수 (Number of Candidates)",
+                min_value=4,
+                max_value=8,
+                value=4,
                 key="tab1_num_candidates",
-                help="How many parallel candidates to generate"
+                help="병렬로 생성할 후보 수 (권장 4~8개) (How many parallel candidates to generate)"
             )
             
             aspect_ratio = st.selectbox(
-                "Aspect Ratio",
+                "화면 비율 (Aspect Ratio)",
                 ["21:9", "16:9", "3:2"],
                 key="tab1_aspect_ratio",
-                help="Aspect ratio for the generated diagrams"
+                help="생성된 다이어그램의 화면 비율 (Aspect ratio for the generated diagrams)"
             )
             
             max_critic_rounds = st.number_input(
-                "Max Critic Rounds",
+                "최대 비평 라운드 (Max Critic Rounds)",
                 min_value=1,
                 max_value=5,
                 value=3,
                 key="tab1_max_critic_rounds",
-                help="Maximum number of critic refinement iterations"
+                help="최대 비평가 개선 반복 횟수 (Maximum number of critic refinement iterations)"
             )
             
             default_model = get_config_val("defaults", "model_name", "MODEL_NAME", "YOUR_MODEL_NAME_HERE")
             options = ["", default_model] if default_model else ["", "YOUR_MODEL_NAME_HERE"]
             
             model_name = st.selectbox(
-                "Model Name",
+                "모델 이름 (Model Name)",
                 options,
                 index=0,
                 key="tab1_model_name",
-                help="Model name to use for reasoning"
+                help="추론에 사용할 모델 이름 (Model name to use for reasoning)"
             )
         
         st.divider()
         
         # Input section
-        st.markdown("## 📝 Input")
+        st.markdown("## 📝 입력 (Input)")
         
         # Example content
         example_method = r"""## Methodology: The PaperVizAgent Framework
@@ -507,7 +507,7 @@ The framework extends to statistical plots by adjusting the Visualizer and Criti
         with col_input1:
             # Example selector for method content
             method_example = st.selectbox(
-                "Load Example (Method)",
+                "예제 불러오기 - 메서드 (Load Example - Method)",
                 ["None", "PaperVizAgent Framework"],
                 key="method_example_selector"
             )
@@ -519,17 +519,17 @@ The framework extends to statistical plots by adjusting the Visualizer and Criti
                 method_value = st.session_state.get("method_content", "")
             
             method_content = st.text_area(
-                "Method Section Content (Markdown recommended)",
+                "메서드 섹션 내용 - 마크다운 권장 (Method Section Content)",
                 value=method_value,
                 height=250,
-                placeholder="Paste the method section content here...",
-                help="The method section from the paper that describes the approach. Markdown format is recommended."
+                placeholder="여기에 메서드 섹션 내용을 붙여넣으세요... (Paste the method section content here...)",
+                help="접근 방식을 설명하는 논문의 방법론 섹션입니다. 마크다운 형식을 권장합니다."
             )
         
         with col_input2:
             # Example selector for caption
             caption_example = st.selectbox(
-                "Load Example (Caption)",
+                "예제 불러오기 - 캡션 (Load Example - Caption)",
                 ["None", "PaperVizAgent Framework"],
                 key="caption_example_selector"
             )
@@ -541,23 +541,23 @@ The framework extends to statistical plots by adjusting the Visualizer and Criti
                 caption_value = st.session_state.get("caption", "")
             
             caption = st.text_area(
-                "Figure Caption (Markdown recommended)",
+                "그림 캡션 - 마크다운 권장 (Figure Caption)",
                 value=caption_value,
                 height=250,
-                placeholder="Enter the figure caption...",
-                help="The caption or description of the figure to generate. Markdown format is recommended."
+                placeholder="그림 캡션을 입력하세요... (Enter the figure caption...)",
+                help="생성할 그림의 캡션 또는 설명입니다. 마크다운 형식을 권장합니다."
             )
         
         # Process button
-        if st.button("🚀 Generate Candidates", type="primary", use_container_width=True):
+        if st.button("🚀 후보 생성 (Generate Candidates)", type="primary", use_container_width=True):
             if not method_content or not caption:
-                st.error("Please provide both method content and caption!")
+                st.error("메서드 내용과 캡션을 모두 제공해주세요! (Please provide both method content and caption!)")
             else:
                 # Save to session state
                 st.session_state["method_content"] = method_content
                 st.session_state["caption"] = caption
                 
-                with st.spinner(f"Generating {num_candidates} candidates in parallel... This may take a few minutes."):
+                with st.spinner(f"병렬로 {num_candidates}개의 후보를 생성하고 있습니다... 몇 분 정도 걸릴 수 있습니다. (Generating {num_candidates} candidates in parallel...)"):
                     # Create input data list
                     input_data_list = create_sample_inputs(
                         method_content=method_content,
@@ -597,10 +597,10 @@ The framework extends to statistical plots by adjusting the Visualizer and Criti
                                 f.write(json_string)
                             
                             st.session_state["json_file"] = str(json_filename)
-                            st.success(f"✅ Successfully generated {len(results)} candidates!")
-                            st.info(f"💾 Results saved to: `{json_filename.name}`")
+                            st.success(f"✅ {len(results)}개의 후보를 성공적으로 생성했습니다! (Successfully generated {len(results)} candidates!)")
+                            st.info(f"💾 결과가 다음 경로에 저장되었습니다: `{json_filename.name}`")
                         except Exception as e:
-                            st.warning(f"⚠️ Generated {len(results)} candidates, but failed to save JSON: {e}")
+                            st.warning(f"⚠️ {len(results)}개의 후보를 생성했지만 JSON을 저장하지 못했습니다(failed to save JSON): {e}")
                     except Exception as e:
                         st.error(f"Error during processing: {e}")
                         import traceback
@@ -613,8 +613,8 @@ The framework extends to statistical plots by adjusting the Visualizer and Criti
             timestamp = st.session_state.get("timestamp", "N/A")
             
             st.divider()
-            st.markdown("## 🎨 Generated Candidates")
-            st.caption(f"Generated at: {timestamp} | Pipeline: {mode_info.get(current_mode, current_mode)}")
+            st.markdown("## 🎨 생성된 후보 (Generated Candidates)")
+            st.caption(f"생성 시간: {timestamp} | 파이프라인: {mode_info.get(current_mode, current_mode)}")
             
             # Show JSON file download if available
             if "json_file" in st.session_state:
@@ -622,12 +622,12 @@ The framework extends to statistical plots by adjusting the Visualizer and Criti
                 if json_file_path.exists():
                     col1, col2 = st.columns([3, 1])
                     with col1:
-                        st.info(f"📄 Results saved to: `{json_file_path.relative_to(Path.cwd())}`")
+                        st.info(f"📄 결과 저장됨 (Results saved to): `{json_file_path.relative_to(Path.cwd())}`")
                     with col2:
                         with open(json_file_path, "r", encoding="utf-8") as f:
                             json_data = f.read()
                         st.download_button(
-                            label="⬇️ Download JSON",
+                            label="⬇️ JSON 다운로드 (Download JSON)",
                             data=json_data,
                             file_name=json_file_path.name,
                             mime="application/json",
@@ -648,7 +648,7 @@ The framework extends to statistical plots by adjusting the Visualizer and Criti
             
             # Add ZIP download button
             st.divider()
-            st.markdown("### 💾 Batch Download")
+            st.markdown("### 💾 일괄 다운로드 (Batch Download)")
             
             try:
                 import zipfile
@@ -688,49 +688,49 @@ The framework extends to statistical plots by adjusting the Visualizer and Criti
                 
                 zip_buffer.seek(0)
                 st.download_button(
-                    label="⬇️ Download ZIP",
+                    label="⬇️ ZIP 다운로드 (Download ZIP)",
                     data=zip_buffer.getvalue(),
                     file_name=f"papervizagent_candidates_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip",
                     mime="application/zip",
                     use_container_width=True
                 )
-                st.success("ZIP file ready for download!")
+                st.success("ZIP 파일을 다운로드할 준비가 되었습니다! (ZIP file ready for download!)")
             except Exception as e:
                 st.error(f"Failed to create ZIP: {e}")
     
     # ==================== TAB 2: Refine Image ====================
     with tab2:
-        st.markdown("### Refine and upscale your diagram to high resolution (2K/4K)")
-        st.caption("Upload an image from the candidates or any diagram, describe changes, and generate a high-res version")
+        st.markdown("### 후보 이미지나 임의의 다이어그램을 업로드하고 레이아웃만 유지한 채 에디토리얼 스타일로 정리합니다. (Apply editorial style while keeping layout)")
+        st.caption("러프한 스케치나 초안 다이어그램을 업로드하고, 원하는 변경 사항을 구체적으로 설명하여 고해상도 에디토리얼 스타일 다이어그램을 생성하세요. (Upload a sketch/diagram and refine it into an editorial illustration)")
         
         # Sidebar for refinement settings
         with st.sidebar:
-            st.title("✨ Refinement Settings")
+            st.title("✨ 다듬기 설정 (Refinement Settings)")
             
             refine_resolution = st.selectbox(
-                "Target Resolution",
+                "대상 해상도 (Target Resolution)",
                 ["2K", "4K"],
                 index=0,
                 key="refine_resolution",
-                help="Higher resolution takes longer but produces better quality"
+                help="해상도가 높을수록 더 오래 걸리지만 더 나은 품질을 생성합니다. (Higher resolution takes longer but produces better quality)"
             )
             
             refine_aspect_ratio = st.selectbox(
-                "Aspect Ratio",
+                "화면 비율 (Aspect Ratio)",
                 ["21:9", "16:9", "3:2"],
                 index=0,
                 key="refine_aspect_ratio",
-                help="Aspect ratio for the refined image"
+                help="다듬어진 이미지의 화면 비율 (Aspect ratio for the refined image)"
             )
         
         st.divider()
         
         # Upload section
-        st.markdown("## 📤 Upload Image")
+        st.markdown("## 📤 이미지 업로드 (Upload Image)")
         uploaded_file = st.file_uploader(
-            "Choose an image file",
+            "이미지 파일을 선택하세요 (Choose an image file)",
             type=["png", "jpg", "jpeg"],
-            help="Upload the diagram you want to refine"
+            help="다듬고 싶은 다이어그램을 업로드하세요 (Upload the diagram you want to refine)"
         )
         
         if uploaded_file is not None:
@@ -739,24 +739,24 @@ The framework extends to statistical plots by adjusting the Visualizer and Criti
             col1, col2 = st.columns(2)
             
             with col1:
-                st.markdown("### Original Image")
+                st.markdown("### 원본 이미지 (Original Image)")
                 st.image(uploaded_image, use_container_width=True)
             
             with col2:
-                st.markdown("### Edit Instructions")
+                st.markdown("### 편집 지침 (Edit Instructions)")
                 edit_prompt = st.text_area(
-                    "Describe the changes you want",
+                    "원하는 변경 사항을 설명하세요 (Describe the changes you want)",
                     height=200,
-                    placeholder="E.g., 'Change the color scheme to match academic paper style' or 'Make the text larger and bolder' or 'Keep everything the same but output in higher resolution'",
-                    help="Describe what you want to change or use 'Keep everything the same' for just upscaling",
+                    placeholder="예: '레이아웃은 그대로 유지하고 색상과 선을 전문적인 에디토리얼 스타일로 세련되게 변경해줘' 또는 '텍스트를 더 크고 명확하게 만들어줘'",
+                    help="수정할 내용을 설명하거나 단순히 업스케일링만 원한다면 'Keep everything the same'을 사용하세요.",
                     key="edit_prompt"
                 )
                 
-                if st.button("✨ Refine Image", type="primary", use_container_width=True):
+                if st.button("✨ 이미지 다듬기 (Refine Image)", type="primary", use_container_width=True):
                     if not edit_prompt:
-                        st.error("Please provide edit instructions!")
+                        st.error("편집 지침을 제공해주세요! (Please provide edit instructions!)")
                     else:
-                        with st.spinner(f"Refining image to {refine_resolution} resolution... This may take a minute."):
+                        with st.spinner(f"이미지를 {refine_resolution} 해상도로 다듬는 중입니다... 1분 정도 걸릴 수 있습니다."):
                             try:
                                 # Convert PIL image to bytes
                                 img_byte_arr = BytesIO()
@@ -788,23 +788,23 @@ The framework extends to statistical plots by adjusting the Visualizer and Criti
             # Display refined result if available
             if "refined_image" in st.session_state:
                 st.divider()
-                st.markdown("## 🎨 Refined Result")
-                st.caption(f"Generated at: {st.session_state.get('refine_timestamp', 'N/A')} | Resolution: {refine_resolution}")
+                st.markdown("## 🎨 다듬은 결과 (Refined Result)")
+                st.caption(f"생성 시간: {st.session_state.get('refine_timestamp', 'N/A')} | 해상도: {refine_resolution}")
                 
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    st.markdown("### Before")
+                    st.markdown("### 이전 (Before)")
                     st.image(uploaded_image, use_container_width=True)
                 
                 with col2:
-                    st.markdown(f"### After ({refine_resolution})")
+                    st.markdown(f"### 이후 (After) ({refine_resolution})")
                     refined_image = Image.open(BytesIO(st.session_state["refined_image"]))
                     st.image(refined_image, use_container_width=True)
                     
                     # Download button
                     st.download_button(
-                        label=f"⬇️ Download {refine_resolution} Image",
+                        label=f"⬇️ {refine_resolution} 이미지 다운로드 (Download Image)",
                         data=st.session_state["refined_image"],
                         file_name=f"refined_{refine_resolution}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.png",
                         mime="image/png",
